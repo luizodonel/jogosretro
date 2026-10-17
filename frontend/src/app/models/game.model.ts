@@ -9,6 +9,8 @@ export interface Game {
   romFileName: string;
   romSizeBytes: number;
   coverUrl: string;
+  coverFileName?: string;
+  romUrl?: string;
   hasSaveState: boolean;
   createdAt: string;
   lastPlayedAt?: string;

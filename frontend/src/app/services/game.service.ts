@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Game, SystemInfo } from '../models/game.model';
 
@@ -32,12 +32,23 @@ export class GameService {
       params = params.set('system', system);
     }
     return this.http.get<Game[]>(`${this.baseUrl}/games`, { params }).pipe(
-      map(games => games.map(g => this.normalizeGame(g)))
+      catchError(() => this.http.get<Game[]>('/assets/catalog.json')),
+      map(games => {
+        if (!games || games.length === 0) {
+          return this.getDefaultStaticGames();
+        }
+        return games.map(g => this.normalizeGame(g));
+      }),
+      catchError(() => of(this.getDefaultStaticGames()))
     );
   }
 
   getGame(id: number): Observable<Game> {
     return this.http.get<Game>(`${this.baseUrl}/games/${id}`).pipe(
+      catchError(() => {
+        const found = this.getDefaultStaticGames().find(g => g.id === id);
+        return found ? of(found) : of(this.getDefaultStaticGames()[0]);
+      }),
       map(g => this.normalizeGame(g))
     );
   }
@@ -75,7 +86,31 @@ export class GameService {
   }
 
   private normalizeGame(game: Game): Game {
-    if (game.coverUrl) {
+    const staticRomMap: Record<string, string> = {
+      'game_12_Donkey_Kong_Country__U___V1.2_____.smc': '/assets/roms/game_12_Donkey_Kong_Country__U___V1.2_____.smc',
+      'game_13_Street_Fighter_II_Turbo__V1.0___E_____.zip': '/assets/roms/game_13_Street_Fighter_II_Turbo__V1.0___E_____.zip'
+    };
+
+    const staticCoverMap: Record<string, string> = {
+      'cover_12_Gemini_Generated_Image_ii6cbtii6cbtii6c.jpeg': '/assets/covers/cover_12_Gemini_Generated_Image_ii6cbtii6cbtii6c.jpeg',
+      'cover_13_Gemini_Generated_Image_taql6ztaql6ztaql.jpeg': '/assets/covers/cover_13_Gemini_Generated_Image_taql6ztaql6ztaql.jpeg'
+    };
+
+    // Mapeamento por nome de arquivo de ROM
+    if (game.romFileName && staticRomMap[game.romFileName]) {
+      game.romUrl = staticRomMap[game.romFileName];
+    } else if (game.title && game.title.toLowerCase().includes('donkey kong')) {
+      game.romUrl = '/assets/roms/game_12_Donkey_Kong_Country__U___V1.2_____.smc';
+      game.coverUrl = '/assets/covers/cover_12_Gemini_Generated_Image_ii6cbtii6cbtii6c.jpeg';
+    } else if (game.title && game.title.toLowerCase().includes('street fighter')) {
+      game.romUrl = '/assets/roms/game_13_Street_Fighter_II_Turbo__V1.0___E_____.zip';
+      game.coverUrl = '/assets/covers/cover_13_Gemini_Generated_Image_taql6ztaql6ztaql.jpeg';
+    }
+
+    // Mapeamento por nome de capa
+    if (game.coverFileName && staticCoverMap[game.coverFileName]) {
+      game.coverUrl = staticCoverMap[game.coverFileName];
+    } else if (game.coverUrl) {
       if (game.coverUrl.startsWith('/api')) {
         const rootUrl = this.baseUrl.replace(/\/api$/, '');
         game.coverUrl = rootUrl + game.coverUrl;
@@ -84,5 +119,40 @@ export class GameService {
       }
     }
     return game;
+  }
+
+  getDefaultStaticGames(): Game[] {
+    return [
+      {
+        id: 12,
+        title: 'Donkey Kong Country (U) (V1.2) [!]',
+        systemCore: 'snes',
+        systemName: 'Super Nintendo',
+        releaseYear: 1995,
+        genre: 'Aventura',
+        description: 'Jogo clássico do Super Nintendo.',
+        romFileName: 'game_12_Donkey_Kong_Country__U___V1.2_____.smc',
+        romSizeBytes: 4194304,
+        coverUrl: '/assets/covers/cover_12_Gemini_Generated_Image_ii6cbtii6cbtii6c.jpeg',
+        romUrl: '/assets/roms/game_12_Donkey_Kong_Country__U___V1.2_____.smc',
+        hasSaveState: false,
+        createdAt: '2026-10-17T15:53:09.000Z'
+      },
+      {
+        id: 13,
+        title: 'Street Fighter II Turbo (V1.0) (E) [!]',
+        systemCore: 'snes',
+        systemName: 'Super Nintendo',
+        releaseYear: 1995,
+        genre: 'Luta',
+        description: 'Jogo clássico de luta para Super Nintendo.',
+        romFileName: 'game_13_Street_Fighter_II_Turbo__V1.0___E_____.zip',
+        romSizeBytes: 1668471,
+        coverUrl: '/assets/covers/cover_13_Gemini_Generated_Image_taql6ztaql6ztaql.jpeg',
+        romUrl: '/assets/roms/game_13_Street_Fighter_II_Turbo__V1.0___E_____.zip',
+        hasSaveState: false,
+        createdAt: '2026-10-17T16:10:53.000Z'
+      }
+    ];
   }
 }

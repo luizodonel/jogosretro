@@ -73,6 +73,13 @@ export class RetroPlayerComponent implements OnInit, OnDestroy {
       canvasContainer.innerHTML = '';
     }
 
+    // Se a ROM já está disponível estaticamente no projeto (assets/roms/)
+    if (this.game.romUrl) {
+      this.statusMessage.set('Iniciando motor WebAssembly...');
+      this.launchEmulatorJs(this.game.romUrl);
+      return;
+    }
+
     // Baixa a ROM em memória como Blob diretamente via Angular
     this.gameService.downloadRomBlob(this.game.id).subscribe({
       next: (blob) => {
@@ -84,9 +91,10 @@ export class RetroPlayerComponent implements OnInit, OnDestroy {
         this.launchEmulatorJs(this.currentBlobUrl);
       },
       error: (err) => {
-        console.warn('Fallback para URL direta após erro ao baixar ROM como blob:', err);
-        this.statusMessage.set('Inicializando...');
-        this.launchEmulatorJs(this.gameService.getRomDownloadUrl(this.game.id));
+        console.warn('Fallback para ROM local estática após erro na API:', err);
+        const fallbackUrl = this.game.romFileName ? `/assets/roms/${this.game.romFileName}` : this.gameService.getRomDownloadUrl(this.game.id);
+        this.statusMessage.set('Iniciando motor WebAssembly...');
+        this.launchEmulatorJs(fallbackUrl);
       }
     });
   }
