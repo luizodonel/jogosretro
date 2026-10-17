@@ -1,0 +1,104 @@
+<div class="player-overlay" #playerContainer>
+  <!-- Top HUD Bar -->
+  <header class="player-header">
+    <div class="game-meta">
+      <span class="system-badge">{{ game.systemName }}</span>
+      <h2 class="game-title">{{ game.title }}</h2>
+      <span class="game-year" *ngIf="game.releaseYear">({{ game.releaseYear }})</span>
+    </div>
+
+    <div class="player-actions">
+      <!-- Status toast message -->
+      <div class="status-indicator" *ngIf="statusMessage()">
+        <span class="pulse-dot"></span>
+        {{ statusMessage() }}
+      </div>
+
+      <button class="btn-tool" (click)="saveToCloud()" [disabled]="isSaving()" title="Salvar progresso no servidor">
+        <span class="icon">💾</span>
+        <span class="label">Salvar Nuvem</span>
+      </button>
+
+      <button class="btn-tool" (click)="toggleControlsModal()" title="Ver mapeamento de controles">
+        <span class="icon">🎮</span>
+        <span class="label">Controles</span>
+      </button>
+
+      <button class="btn-tool" (click)="restartGame()" title="Reiniciar emulador">
+        <span class="icon">🔄</span>
+        <span class="label">Reiniciar</span>
+      </button>
+
+      <button class="btn-tool" (click)="toggleFullscreen()" title="Alternar tela cheia">
+        <span class="icon">⛶</span>
+        <span class="label">Tela Cheia</span>
+      </button>
+
+      <button class="btn-tool btn-close" (click)="onClose()" title="Encerrar jogo">
+        <span class="icon">✖</span>
+        <span class="label">Sair</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Emulation Viewport Area -->
+  <main class="viewport-wrapper">
+    <!-- Loading Overlay with click-to-dismiss -->
+    <div class="loader-overlay" *ngIf="isLoading()" (click)="dismissLoader()">
+      <div class="spinner-box" (click)="$event.stopPropagation()">
+        <div class="arcade-spinner"></div>
+        <p class="loader-text">CARREGANDO MOTOR WASM & ROM...</p>
+        <span class="loader-sub">Aguarde a inicialização do núcleo Libretro</span>
+
+        <button class="btn-start-now" (click)="dismissLoader()">
+          <span>🎮 Iniciar Agora</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Container do EmulatorJS -->
+    <div class="canvas-holder">
+      <div id="game-viewport"></div>
+    </div>
+  </main>
+
+  <!-- Controls Reference Modal Overlay -->
+  <div class="controls-modal-overlay" *ngIf="showControlsModal()" (click)="toggleControlsModal()">
+    <div class="controls-card" (click)="$event.stopPropagation()">
+      <div class="controls-header">
+        <h3>🕹️ Guia de Controles</h3>
+        <button class="btn-mini-close" (click)="toggleControlsModal()">✖</button>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-col">
+          <h4>⌨️ Teclado (PC)</h4>
+          <table class="keys-table">
+            <tr><td><strong>Direcionais:</strong></td><td>Setas (↑ ↓ ← →) ou W A S D</td></tr>
+            <tr><td><strong>Botão A:</strong></td><td><kbd>X</kbd></td></tr>
+            <tr><td><strong>Botão B:</strong></td><td><kbd>Z</kbd></td></tr>
+            <tr><td><strong>Botão X:</strong></td><td><kbd>S</kbd></td></tr>
+            <tr><td><strong>Botão Y:</strong></td><td><kbd>A</kbd></td></tr>
+            <tr><td><strong>Start:</strong></td><td><kbd>Enter</kbd></td></tr>
+            <tr><td><strong>Select:</strong></td><td><kbd>Shift Direito</kbd></td></tr>
+            <tr><td><strong>Gatilho L / R:</strong></td><td><kbd>Q</kbd> / <kbd>E</kbd></td></tr>
+          </table>
+          <p class="tip">Você também pode remapear as teclas a qualquer momento usando a barra de ferramentas inferior do emulador.</p>
+        </div>
+
+        <div class="control-col">
+          <h4>🎮 Gamepad Físico (USB / Bluetooth)</h4>
+          <p>Conecte seu controle de Xbox, PlayStation ou genérico no computador ou smartphone.</p>
+          <p class="status-ok">✔ Reconhecimento automático via HTML5 Gamepad API sem necessidade de drivers adicionais!</p>
+
+          <h4 style="margin-top: 1.5rem;">📱 Celular (Touchscreen)</h4>
+          <p>Ao abrir a aplicação no smartphone ou tablet, botões virtuais transparentes e analógico na tela surgem automaticamente.</p>
+        </div>
+      </div>
+
+      <div class="controls-footer">
+        <button class="btn-primary" (click)="toggleControlsModal()">Entendido, Voltar ao Jogo</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,226 @@
+<div class="retro-app-layout">
+  <!-- Top Navigation Header -->
+  <header class="retro-navbar">
+    <div class="nav-brand">
+      <div class="brand-icon">👾</div>
+      <div class="brand-text">
+        <h1 class="brand-title">RETRO<span>HUB</span></h1>
+        <p class="brand-subtitle">Web Retro Gaming & Cloud Saves</p>
+      </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="nav-search">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        [value]="searchQuery()"
+        (input)="onSearchInput($any($event.target).value)"
+        placeholder="Buscar por título, gênero ou plataforma..."
+      />
+      <button *ngIf="searchQuery()" class="clear-search" (click)="clearSearch()">✖</button>
+    </div>
+
+    <!-- Action Buttons & Status -->
+    <div class="nav-actions">
+      <!-- Gamepad Indicator -->
+      <div class="gamepad-status" [class.connected]="gamepadConnected()" [title]="gamepadConnected() ? connectedGamepadName() : 'Nenhum controle físico conectado'">
+        <span class="gamepad-icon">🎮</span>
+        <span class="gamepad-text">{{ gamepadConnected() ? 'Controle Ativo' : 'Teclado / Touch' }}</span>
+      </div>
+
+      <button class="btn-nav-outline" (click)="toggleGuide()">
+        <span>⌨️ Controles</span>
+      </button>
+
+      <button class="btn-nav-add" (click)="openUploadModal()">
+        <span>+ Adicionar ROM</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Platform Filter Pill Bar -->
+  <section class="systems-bar">
+    <div class="systems-scroll">
+      <button
+        class="system-pill"
+        [class.active]="selectedSystem() === 'all'"
+        (click)="selectSystem('all')"
+      >
+        <span class="pill-icon">🌟</span>
+        <span class="pill-name">Todos os Jogos</span>
+        <span class="pill-count">{{ games().length }}</span>
+      </button>
+
+      <button
+        *ngFor="let sys of systems()"
+        class="system-pill"
+        [class.active]="selectedSystem() === sys.core"
+        (click)="selectSystem(sys.core)"
+      >
+        <span class="pill-icon">{{ sys.icon }}</span>
+        <span class="pill-name">{{ sys.name }}</span>
+        <span class="pill-count">{{ sys.gameCount }}</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Main Catalog Content -->
+  <main class="main-catalog">
+    <!-- Header info line -->
+    <div class="catalog-heading">
+      <div class="heading-title">
+        <h2>Biblioteca de Jogos</h2>
+        <span class="results-badge">{{ games().length }} disponíveis</span>
+      </div>
+      <div class="heading-tip">
+        Toque ou clique em <strong>Jogar</strong> para iniciar o emulador WebAssembly instantaneamente.
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="isLoading()">
+      <div class="arcade-spinner"></div>
+      <p>Carregando catálogo retrô...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!isLoading() && games().length === 0">
+      <div class="empty-icon">🕹️</div>
+      <h3>Nenhum jogo encontrado</h3>
+      <p>Adicione novas ROMs (.sfc, .gba, .nes, .md) diretamente pelo botão abaixo ou limpe o filtro de busca.</p>
+      <button class="btn-nav-add" (click)="openUploadModal()">
+        Adicionar Primeira ROM
+      </button>
+    </div>
+
+    <!-- Games Grid -->
+    <div class="games-grid" *ngIf="!isLoading() && games().length > 0">
+      <article *ngFor="let game of games()" class="game-card" (click)="playGame(game)">
+        <!-- Card Media -->
+        <div class="card-media">
+          <img
+            [src]="game.coverUrl"
+            [alt]="game.title"
+            loading="lazy"
+            class="cover-image"
+          />
+          <span class="system-tag" [attr.data-system]="game.systemCore">
+            {{ game.systemName }}
+          </span>
+
+          <span class="save-tag" *ngIf="game.hasSaveState" title="Possui Save State no servidor">
+            💾 Save Salvo
+          </span>
+
+          <!-- Hover Overlay with Play Button -->
+          <div class="card-overlay">
+            <button class="btn-play-action">
+              <span class="play-triangle">▶</span>
+              <span>JOGAR</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="card-body">
+          <div class="card-header-line">
+            <h3 class="card-title" [title]="game.title">{{ game.title }}</h3>
+          </div>
+
+          <div class="card-meta-line">
+            <span class="game-genre">{{ game.genre }}</span>
+            <span class="game-dot" *ngIf="game.releaseYear">•</span>
+            <span class="game-year" *ngIf="game.releaseYear">{{ game.releaseYear }}</span>
+          </div>
+
+          <p class="card-description" *ngIf="game.description">
+            {{ game.description }}
+          </p>
+
+          <div class="card-footer-line">
+            <span class="rom-size" *ngIf="game.romSizeBytes">
+              {{ (game.romSizeBytes / (1024 * 1024)).toFixed(2) }} MB
+            </span>
+
+            <div class="card-actions-quick" (click)="$event.stopPropagation()">
+              <button
+                *ngIf="game.hasSaveState"
+                class="btn-icon-action"
+                title="Baixar arquivo de Save (.state)"
+                (click)="downloadSave(game, $event)"
+              >
+                💾
+              </button>
+              <button
+                class="btn-icon-action btn-delete"
+                title="Remover jogo"
+                (click)="confirmDelete(game, $event)"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <!-- Player Modal (EmulatorJS Viewport) -->
+  <app-retro-player
+    *ngIf="activeGameForPlay()"
+    [game]="activeGameForPlay()!"
+    (close)="closePlayer()"
+  ></app-retro-player>
+
+  <!-- Upload Modal -->
+  <app-upload-modal
+    *ngIf="showUploadModal()"
+    (close)="closeUploadModal()"
+    (gameUploaded)="onGameUploaded()"
+  ></app-upload-modal>
+
+  <!-- General Controls Guide Modal -->
+  <div class="guide-modal-overlay" *ngIf="showGuideModal()" (click)="toggleGuide()">
+    <div class="guide-card" (click)="$event.stopPropagation()">
+      <div class="guide-header">
+        <h3>🎮 Como Jogar no RetroHub</h3>
+        <button class="btn-mini-close" (click)="toggleGuide()">✖</button>
+      </div>
+
+      <div class="guide-body">
+        <div class="guide-section">
+          <h4>⌨️ Teclado Padrão</h4>
+          <ul class="guide-list">
+            <li><strong>Direcionais:</strong> Teclas de Setas (↑, ↓, ←, →) ou W, A, S, D</li>
+            <li><strong>Botão A:</strong> Tecla <kbd>X</kbd></li>
+            <li><strong>Botão B:</strong> Tecla <kbd>Z</kbd></li>
+            <li><strong>Botão X:</strong> Tecla <kbd>S</kbd> (SNES)</li>
+            <li><strong>Botão Y:</strong> Tecla <kbd>A</kbd> (SNES)</li>
+            <li><strong>Start:</strong> <kbd>Enter</kbd></li>
+            <li><strong>Select:</strong> <kbd>Shift Direito</kbd></li>
+            <li><strong>Gatilhos L / R:</strong> <kbd>Q</kbd> e <kbd>E</kbd></li>
+          </ul>
+        </div>
+
+        <div class="guide-section">
+          <h4>📱 Celular / Tablet</h4>
+          <p>O emulador reconhece automaticamente toques na tela e renderiza um gamepad virtual com botões e D-pad translúcidos.</p>
+
+          <h4 style="margin-top: 1rem;">🕹️ Gamepads USB / Bluetooth</h4>
+          <p>Basta conectar seu joystick (Xbox, DualShock, DualSense, 8BitDo) no PC ou celular via Bluetooth ou cabo. O navegador reconhece instantaneamente!</p>
+        </div>
+      </div>
+
+      <div class="guide-footer">
+        <button class="btn-primary" (click)="toggleGuide()">Fechar Guia</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Alert -->
+  <div class="toast-notification" *ngIf="toastMessage()">
+    <span class="toast-icon">⚡</span>
+    <span>{{ toastMessage() }}</span>
+  </div>
+</div>

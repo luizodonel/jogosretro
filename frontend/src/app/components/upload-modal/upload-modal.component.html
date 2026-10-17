@@ -1,0 +1,140 @@
+<div class="modal-overlay" (click)="close.emit()">
+  <div class="modal-box" (click)="$event.stopPropagation()">
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="header-title">
+        <span class="header-icon">🚀</span>
+        <h3>Adicionar Novo Jogo (ROM)</h3>
+      </div>
+      <button class="btn-close" (click)="close.emit()">✖</button>
+    </div>
+
+    <!-- Body / Form -->
+    <form (ngSubmit)="submit()" class="modal-form">
+      <!-- Drag & Drop Zone -->
+      <div
+        class="drop-zone"
+        [class.dragging]="isDragging"
+        [class.has-file]="selectedRomFile"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onFileDropped($event)"
+        (click)="romInput.click()"
+      >
+        <input
+          #romInput
+          type="file"
+          accept=".sfc,.smc,.gba,.nes,.md,.gen,.bin,.gb,.gbc,.zip"
+          (change)="onRomFileChange($event)"
+          style="display: none;"
+        />
+
+        <div class="drop-content" *ngIf="!selectedRomFile">
+          <span class="upload-icon">📁</span>
+          <p class="drop-title">Arraste seu arquivo de ROM aqui ou clique para selecionar</p>
+          <span class="drop-sub">Suporta: .sfc (SNES), .gba (GBA), .nes (NES), .md/.gen (Mega Drive), .gb/.gbc</span>
+        </div>
+
+        <div class="selected-file-info" *ngIf="selectedRomFile">
+          <span class="file-icon">🎮</span>
+          <div class="file-texts">
+            <span class="file-name">{{ selectedRomFile.name }}</span>
+            <span class="file-size">{{ (selectedRomFile.size / (1024 * 1024)).toFixed(2) }} MB</span>
+          </div>
+          <span class="badge-change">Trocar</span>
+        </div>
+      </div>
+
+      <!-- Form Grid -->
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label>Título do Jogo *</label>
+          <input
+            type="text"
+            [(ngModel)]="title"
+            name="title"
+            placeholder="Ex: Super Mario World, Chrono Trigger..."
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Console / Sistema *</label>
+          <select [(ngModel)]="system" name="system" required>
+            <option *ngFor="let s of systemsList" [value]="s.core">
+              {{ s.name }} ({{ s.ext }})
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Ano de Lançamento</label>
+          <input
+            type="number"
+            [(ngModel)]="year"
+            name="year"
+            placeholder="Ex: 1994"
+            min="1970"
+            max="2030"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Gênero</label>
+          <input
+            type="text"
+            [(ngModel)]="genre"
+            name="genre"
+            placeholder="Ex: Plataforma, RPG, Ação, Corrida"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>URL da Capa (Opcional)</label>
+          <input
+            type="url"
+            [(ngModel)]="customCoverUrl"
+            name="customCoverUrl"
+            placeholder="https://exemplo.com/capa.jpg"
+          />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Ou Faça Upload da Imagem de Capa</label>
+          <input
+            type="file"
+            accept="image/*"
+            (change)="onCoverFileChange($event)"
+            class="file-input-cover"
+          />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Descrição do Jogo</label>
+          <textarea
+            [(ngModel)]="description"
+            name="description"
+            rows="3"
+            placeholder="Breve sinopse do jogo ou notas adicionais..."
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div class="alert-error" *ngIf="errorMessage">
+        ⚠️ {{ errorMessage }}
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="close.emit()" [disabled]="isUploading">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-submit" [disabled]="isUploading || !selectedRomFile">
+          <span *ngIf="!isUploading">🚀 Adicionar ao Catálogo</span>
+          <span *ngIf="isUploading">Enviando ROM para o Servidor...</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
