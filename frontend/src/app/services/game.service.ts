@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Game, SystemInfo } from '../models/game.model';
 
 @Injectable({
@@ -8,7 +9,19 @@ import { Game, SystemInfo } from '../models/game.model';
 })
 export class GameService {
   private http = inject(HttpClient);
-  private baseUrl = 'http://localhost:8080/api';
+
+  // URL da API REST detectada automaticamente (Localhost vs Produção)
+  readonly baseUrl = this.resolveApiBaseUrl();
+
+  private resolveApiBaseUrl(): string {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      if (hostname === 'jogosretro.luizodonel.cloud' || hostname.includes('luizodonel.cloud')) {
+        return 'https://jogosretroapi.luizodonel.cloud/api';
+      }
+    }
+    return 'http://localhost:8080/api';
+  }
 
   getGames(search?: string, system?: string): Observable<Game[]> {
     let params = new HttpParams();
@@ -18,11 +31,15 @@ export class GameService {
     if (system && system !== 'all') {
       params = params.set('system', system);
     }
-    return this.http.get<Game[]>(`${this.baseUrl}/games`, { params });
+    return this.http.get<Game[]>(`${this.baseUrl}/games`, { params }).pipe(
+      map(games => games.map(g => this.normalizeGame(g)))
+    );
   }
 
   getGame(id: number): Observable<Game> {
-    return this.http.get<Game>(`${this.baseUrl}/games/${id}`);
+    return this.http.get<Game>(`${this.baseUrl}/games/${id}`).pipe(
+      map(g => this.normalizeGame(g))
+    );
   }
 
   getSystems(): Observable<SystemInfo[]> {
@@ -30,7 +47,9 @@ export class GameService {
   }
 
   uploadGame(formData: FormData): Observable<Game> {
-    return this.http.post<Game>(`${this.baseUrl}/games/upload`, formData);
+    return this.http.post<Game>(`${this.baseUrl}/games/upload`, formData).pipe(
+      map(g => this.normalizeGame(g))
+    );
   }
 
   deleteGame(id: number): Observable<{ message: string }> {
@@ -53,5 +72,17 @@ export class GameService {
 
   getSaveStateDownloadUrl(id: number): string {
     return `${this.baseUrl}/games/${id}/save`;
+  }
+
+  private normalizeGame(game: Game): Game {
+    if (game.coverUrl) {
+      if (game.coverUrl.startsWith('/api')) {
+        const rootUrl = this.baseUrl.replace(/\/api$/, '');
+        game.coverUrl = rootUrl + game.coverUrl;
+      } else if (game.coverUrl.includes('localhost:8080') && this.baseUrl.includes('jogosretroapi.luizodonel.cloud')) {
+        game.coverUrl = game.coverUrl.replace('http://localhost:8080/api', 'https://jogosretroapi.luizodonel.cloud/api');
+      }
+    }
+    return game;
   }
 }
