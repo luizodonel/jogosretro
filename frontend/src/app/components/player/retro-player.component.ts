@@ -20,6 +20,8 @@ declare global {
   interface Window {
     EJS_player?: string;
     EJS_core?: string;
+    EJS_gameName?: string;
+    EJS_gameID?: number;
     EJS_gameUrl?: string;
     EJS_pathtodata?: string;
     EJS_startOnLoaded?: boolean;
@@ -93,6 +95,8 @@ export class RetroPlayerComponent implements OnInit, OnDestroy {
     // Configuração EmulatorJS local (carregamento ultra-rápido instantâneo)
     window.EJS_player = '#game-viewport';
     window.EJS_core = this.game.systemCore;
+    window.EJS_gameName = this.game.title;
+    window.EJS_gameID = this.game.id;
     window.EJS_gameUrl = gameUrl;
     window.EJS_pathtodata = '/emulatorjs/data/';
     window.EJS_startOnLoaded = true;
