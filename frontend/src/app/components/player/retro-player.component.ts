@@ -61,6 +61,12 @@ export class RetroPlayerComponent implements OnInit, OnDestroy {
   isSaving = signal(false);
 
   ngOnInit(): void {
+    if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined' && !sessionStorage.getItem('ejs_core_purged_v3')) {
+      try {
+        indexedDB.deleteDatabase('EmulatorJS-core');
+        sessionStorage.setItem('ejs_core_purged_v3', '1');
+      } catch (e) {}
+    }
     this.bootEmulator();
   }
 
