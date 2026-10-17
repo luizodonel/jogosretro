@@ -1,18 +1,18 @@
 @echo off
-title RetroHub - Iniciar Sistema Completo
+title RetroHub - Iniciar Fullstack
 echo ========================================================
 echo        🎮 INICIANDO RETROHUB (FULLSTACK) 🎮
 echo ========================================================
 echo.
-echo 1. Abrindo terminal do Back-end Spring Boot (8080)...
-start "RetroHub Backend" cmd /k "%~dp0start-backend.bat"
+echo 1. Abrindo terminal do Back-end Spring Boot (Porta 8080)...
+start "RetroHub Backend (Porta 8080)" cmd /k "cd /d D:\PROJETOS_GITHOUB\jogosretroAPI\backend && mvn spring-boot:run"
 
-echo 2. Abrindo terminal do Front-end Angular (4200)...
-start "RetroHub Frontend" cmd /k "%~dp0start-frontend.bat"
+echo 2. Abrindo terminal do Front-end Angular (Porta 4200)...
+start "RetroHub Frontend (Porta 4200)" cmd /k "cd /d D:\PROJETOS_GITHOUB\jogosretro\frontend && npm start"
 
 echo.
-echo Ambos os servicos estao sendo iniciados!
-echo Quando o front-end carregar, acesse no navegador:
+echo Ambos os servidores estao em execucao!
+echo Acesse no navegador:
 echo 👉 http://localhost:4200
 echo.
 pause
